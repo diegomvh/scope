@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
-from scope.scope import Selector, Scope
+from scope.scope import Scope, Context, Selector
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
@@ -58,10 +58,10 @@ class ScopeSelectorTests(unittest.TestCase):
             self.assertLessEqual(sum(rank), lastRank)
             lastRank = sum(rank)
 
-    def test_source_selectors(self):
-        selector = Selector("source > ((L:punctuation.section.*.begin > R:punctuation.section.*.end) | (L:punctuation.definition.*.begin > R:punctuation.definition.*.end)) - string")
+    def test_context(self):
+        selector = Selector("source & ((L:punctuation.section.*.begin & R:punctuation.section.*.end) | (L:punctuation.definition.*.begin & R:punctuation.definition.*.end)) - string")
         rank = []
-        self.assertTrue(selector.does_match("text.html.markdown meta.paragraph.markdown markup.bold.markdown", rank))
+        self.assertTrue(selector.does_match(Context("source.python punctuation.definition.list.begin.python", "source.python punctuation.definition.list.end.python"), rank))
             
 if __name__ == '__main__':
     unittest.main()

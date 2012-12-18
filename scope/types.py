@@ -23,6 +23,14 @@ class ScopeType(object):
     def __repr__(self):
         return "%s anchor_to_previous:%s\n[%s]" % (self.__class__.__name__, self.anchor_to_previous, "\n".join([repr(a) for a in self.atoms]))
 
+    def __eq__(self, rhs):
+        return self.atoms == rhs.atoms
+    
+    def __ne__(self, rhs):
+        return not self == rhs
+    
+    def __lt__(self, rhs):
+        return self.atoms < rhs.atoms
 
 class PathType(object):
     def __init__(self):
@@ -38,6 +46,15 @@ class PathType(object):
 
     def __repr__(self):
         return "%s anchor_to_bol:%s anchor_to_eol:%s\n[%s]" % (self.__class__.__name__, self.anchor_to_bol, self.anchor_to_eol, "\n".join([repr(s) for s in self.scopes]))
+
+    def __eq__(self, rhs):
+        return self.scopes == rhs.scopes
+    
+    def __ne__(self, rhs):
+        return self.scopes != rhs.scopes
+    
+    def __lt__(self, rhs):
+        return self.scopes < rhs.scopes
 
     def does_match(self, lhs, path, rank = None):
         i = len(path.scopes)
