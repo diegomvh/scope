@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+from scope.scope import Selector, Scope
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
@@ -33,8 +34,8 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertEqual(Selector("^ foo").does_match("foo bar foo"), True)
         self.assertEqual(Selector("foo $").does_match("foo bar"), False)
         self.assertEqual(Selector("bar $").does_match("foo bar"), True)
-        
-        
+
+
     def test_scope_selector(self):
         textScope = Scope("text.html.markdown meta.paragraph.markdown markup.bold.markdown")
         matchingSelectors = [
@@ -54,8 +55,13 @@ class ScopeSelectorTests(unittest.TestCase):
         for selector in matchingSelectors:
             rank = []
             self.assertTrue(selector.does_match(textScope, rank))
-            self.assertLess(sum(rank), lastRank)
+            self.assertLessEqual(sum(rank), lastRank)
             lastRank = sum(rank)
 
+    def test_source_selectors(self):
+        selector = Selector("source > ((L:punctuation.section.*.begin > R:punctuation.section.*.end) | (L:punctuation.definition.*.begin > R:punctuation.definition.*.end)) - string")
+        rank = []
+        self.assertTrue(selector.does_match("text.html.markdown meta.paragraph.markdown markup.bold.markdown", rank))
+            
 if __name__ == '__main__':
     unittest.main()
