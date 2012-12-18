@@ -6,7 +6,7 @@ from parser import Parser
 
 class Scope(object):
     def __init__(self, scope):
-        self.path = Parser.path(scope)
+        self.path = scope and Parser.path(scope) or Parser.path("")
 
 
     def __str__(self):
@@ -25,10 +25,14 @@ class Scope(object):
 
 wildcard = Scope("x-any")
 
+class Context(object):
+    def __init__(self, left, right = None):
+        self.left = Scope(left)
+        self.right = Scope(right) if right else Scope(left)
 
 class Selector(object):
-    def __init__(self, selector = None):
-        self.selector = Parser.selector(selector) if selector else selector
+    def __init__(self, selector):
+        self.selector = selector and Parser.selector(selector)
 
 
     def __str__(self):
@@ -37,12 +41,10 @@ class Selector(object):
 
     # ------- Matching 
     def does_match(self, scope, rank = None):
-        if isinstance(scope, basestring):
-            scope = Scope(scope)
         if not self.selector:
             if rank is not None:
                 rank.append(0)
             return True
-        if not scope.path:
-            return False
+        if not isinstance(scope, Scope):
+            scope = Scope(scope)
         return scope == wildcard or self.selector.does_match(scope.path, scope.path, rank)
