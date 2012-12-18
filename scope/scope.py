@@ -27,8 +27,8 @@ wildcard = Scope("x-any")
 
 
 class Selector(object):
-    def __init__(self, selector):
-        self.selector = Parser.selector(selector)
+    def __init__(self, selector = None):
+        self.selector = Parser.selector(selector) if selector else selector
 
 
     def __str__(self):

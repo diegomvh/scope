@@ -41,8 +41,8 @@ class PathType(object):
         anchor_to_eol = self.anchor_to_eol
         check_next = False
         reset_score = 0
-        score = 0;
-        power = 0;
+        score = 0.0
+        power = 0.0
         while j <= i and j:
             assert i; assert j
             assert i-1 < len(path.scopes)
