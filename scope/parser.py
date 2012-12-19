@@ -103,17 +103,16 @@ class Parser(object):
 
     def parse_composite(self, res):
         rc = False
+        dest = []
         while True:
-            expression = types.ExpressionType()
+            expression = types.ExpressionType(dest and dest.pop() or None)
             if not self.parse_expression(expression):
                 break
             res.expressions.append(expression)
             rc = True
-            dest = []
-            if not (self.ws() and self.parse_char("&|-", dest) and self.ws()):
-                break
-            if dest:
-                expression.op = dest[0]
+            if self.ws() and self.parse_char("&|-", dest) and self.ws():
+                continue
+            break
         return rc
 
     def parse_selector(self, res):

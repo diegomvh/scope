@@ -135,7 +135,7 @@ class FilterType(object):
             r1 = []
             r2 = []
             if selector.does_match(lhs, lhs, r1) and selector.does_match(rhs, rhs, r2):
-                rank.append(max(sum(r1), sum(r2)))
+                rank.append(max(r1.pop(), r2.pop()))
                 return True
             return False
         else:
@@ -148,8 +148,8 @@ class FilterType(object):
             return False
 		
 class ExpressionType(object):
-    def __init__(self):
-        self.op = None
+    def __init__(self, op):
+        self.op = op
         self.negate = False
         self.selector = SelectorType()
     
@@ -176,12 +176,12 @@ class CompositeType(object):
         res = False
         if rank is not None:
             rsum = 0
+            r = []
             for expr in self.expressions:
-                r = []
                 op = expr.op
                 local = expr.selector.does_match(lhs, rhs, r)
                 if local:
-                    rsum = max(sum(r), rsum)
+                    rsum = max(r.pop(), rsum)
                 if expr.negate:
                     local = not local
                 
@@ -236,10 +236,10 @@ class SelectorType(object):
         if rank is not None:
             res = False
             rsum = 0
+            r = []
             for composite in self.composites:
-                r = []
                 if composite.does_match(lhs, rhs, r):
-                    rsum = max(sum(r), rsum)
+                    rsum = max(r.pop(), rsum)
                     res = True
             if res:
                 rank.append(rsum)
