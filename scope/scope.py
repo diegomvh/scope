@@ -36,14 +36,23 @@ class Scope(object):
 
 wildcard = Scope("x-any")
 
+
 class Context(object):
-    def __init__(self, left, right = None):
+    CONTEXTS = {}
+    def __init__(self, left, right):
         self.left = isinstance(left, Scope) and left or Scope(left)
-        if right is not None:
-            self.right = isinstance(right, Scope) and right or Scope(right)
-        else:
-            self.right = isinstance(left, Scope) and left or Scope(left)
+        self.right = isinstance(right, Scope) and right or Scope(right)
+
+    @classmethod
+    def get(cls, left, right = None):
+        # TODO: Testing cache
+        right = right or left
+        if left not in cls.CONTEXTS or right not in cls.CONTEXTS[left]:
+            leftCache = cls.CONTEXTS.setdefault(left, {})
+            leftCache[right] = cls(left, right)
+        return cls.CONTEXTS[left][right]
             
+        
     def __str__(self):
         if self.left == self.right:
             return "(l/r '%s')" % str(self.left)
@@ -59,10 +68,11 @@ class Context(object):
     def __lt__(self, rhs):
         return self.left < rhs.left or self.left == self.rhs.left and self.right < rhs.right
 
+
 class Selector(object):
     def __init__(self, selector):
         self.selector = selector and Parser.selector(selector)
-
+        self.previousMatch = {}
 
     def __str__(self):
         return str(self.selector)
@@ -70,11 +80,23 @@ class Selector(object):
 
     # ------- Matching 
     def does_match(self, context, rank = None):
+        #assert isinstance(rank, list)
         if not self.selector:
             if rank is not None:
                 rank.append(0)
             return True
         if isinstance(context, (basestring, Scope)):
-            context = Context(context)
-        if isinstance(context, Context):
-            return context.left == wildcard or context.right == wildcard or self.selector.does_match(context.left.path, context.right.path, rank)
+            context = Context.get(context)
+
+        #assert isinstance(context, Context)
+        # Search in cache
+        matchKey = (context, isinstance(rank, list))
+        if matchKey in self.previousMatch:
+            if matchKey[1]:
+                rank.append(self.previousMatch[matchKey][1])
+            return self.previousMatch[matchKey][0]
+        
+        match = context.left == wildcard or context.right == wildcard or self.selector.does_match(context.left.path, context.right.path, rank)
+        self.previousMatch[matchKey] = (match, matchKey[1] and sum(rank) or None)
+        #print self.previousMatch[matchKey], rank
+        return match
