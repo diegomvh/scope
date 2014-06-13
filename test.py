@@ -70,4 +70,6 @@ class ScopeSelectorTests(unittest.TestCase):
             Scope.factory("source.python punctuation.definition.list.end.python")), rank))
             
 if __name__ == '__main__':
+    from scope.nscope import Scope
+    print(Scope("source.python punctuation.definition.list.begin.python"))
     unittest.main()
