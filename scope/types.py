@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+ROOT = ( "comment", "constant", "entity", "invalid", "keyword", "markup",
+    "meta", "storage", "string", "support", "variable" )
+
 def prefix_match(lhs, rhs):
     if len(lhs) > len(rhs):
         return False
-    
-    for i in xrange(len(lhs)):
-        assert i < len(lhs); assert i < len(rhs)
+
+    for i in range(len(lhs)):
         if lhs[i] != rhs[i] and lhs[i] != "*":
             return False
     return True
@@ -14,15 +16,26 @@ def prefix_match(lhs, rhs):
 class ScopeType(object):
     def __init__(self):
         self.anchor_to_previous = False
-        self.atoms = []
+        self.atoms = ()
 
+    @classmethod
+    def factory(cls, atoms):
+        scope = cls()
+        scope.atoms = tuple(atoms.split("."))
+        return scope
+    
     def __str__(self):
         ret = self.anchor_to_previous and "> " or ""
         return ret + ".".join(self.atoms)
 
+    __unicode__ = __str__
+    
     def __repr__(self):
         return "%s anchor_to_previous:%s\n[%s]" % (self.__class__.__name__, self.anchor_to_previous, "\n".join([repr(a) for a in self.atoms]))
 
+    def __hash__(self):
+        return hash(self.anchor_to_previous) + hash(self.atoms)
+    
     def __eq__(self, rhs):
         return self.atoms == rhs.atoms
     
@@ -31,21 +44,49 @@ class ScopeType(object):
     
     def __lt__(self, rhs):
         return self.atoms < rhs.atoms
-
+    
+    def __add__(self, rhs):
+        scope = ScopeType()
+        scope.atoms = self.atoms + rhs.atoms
+        return scope
+    
 class PathType(object):
     def __init__(self):
         self.anchor_to_bol = False
         self.anchor_to_eol = False
-        self.scopes = []
+        self.scopes = ()
 
+    @classmethod
+    def factory(cls, scopes):
+        path = cls()
+        path.scopes = tuple([ ScopeType.factory(scope) for scope in scopes])
+        return path
+    
     def __str__(self):
         ret = self.anchor_to_bol and "^ " or ""
-        ret += " ".join(map(lambda s: str(s), self.scopes))
+        ret += " ".join(("%s" % scope for scope in self.scopes))
         ret += self.anchor_to_eol and " $" or ""
         return ret
 
+    __unicode__ = __str__
+    
+    def to_open_xml(self):
+        return "".join(("<%s>" % scope for scope in self.scopes))
+
+    def to_close_xml(self):
+        return "".join(("</%s>" % scope for scope in self.scopes[::-1]))
+                
+    def rootGroup(self):
+        for scope in self.scopes[::-1]:
+            for atom in scope.atoms:
+                if atom in ROOT:
+                    return atom
+                
     def __repr__(self):
         return "%s anchor_to_bol:%s anchor_to_eol:%s\n[%s]" % (self.__class__.__name__, self.anchor_to_bol, self.anchor_to_eol, "\n".join([repr(s) for s in self.scopes]))
+
+    def __hash__(self):
+        return hash(self.anchor_to_bol) + hash(self.anchor_to_eol) + hash(self.scopes)
 
     def __eq__(self, rhs):
         return self.scopes == rhs.scopes
@@ -55,7 +96,12 @@ class PathType(object):
     
     def __lt__(self, rhs):
         return self.scopes < rhs.scopes
-
+    
+    def __add__(self, rhs):
+        path = PathType()
+        path.scopes = self.scopes + rhs.scopes
+        return path
+    
     def does_match(self, lhs, path, rank = None):
         i = len(path.scopes)
         size_i = i
@@ -80,7 +126,7 @@ class PathType(object):
                 
             power += len(path.scopes[i-1].atoms)
             if prefix_match(self.scopes[j-1].atoms, path.scopes[i-1].atoms):
-                for k in xrange(len(self.scopes[j-1].atoms)):
+                for k in range(len(self.scopes[j-1].atoms)):
                     score += 1 / pow(2, power - k)
                 j -= 1
                 check_next = anchor_to_previous
@@ -105,7 +151,7 @@ class PathType(object):
         if j == 0 and rank is not None:
             rank.append(score)
         return j == 0
-			
+
 class GroupType(object):
     def __init__(self):
         self.selector = SelectorType()
@@ -113,8 +159,13 @@ class GroupType(object):
     def __str__(self):
         return "(%s)" % self.selector
 
+    __unicode__ = __str__
+
     def __repr__(self):
         return "%s\n[%s]" % (self.__class__.__name__, repr(self.selector))
+
+    def __hash__(self):
+        return hash(self.selector)
 
     def does_match(self, lhs, rhs, rank = None):
         return self.selector.does_match(lhs, rhs, rank)
@@ -127,9 +178,14 @@ class FilterType(object):
     def __str__(self):
         return "%s:%s" % (self.fltr, self.selector)
 
+    __unicode__ = __str__
+
     def __repr__(self):
         return "%s fltr:%s\n[%s]" % (self.__class__.__name__, self.fltr, repr(self.selector))
 
+    def __hash__(self):
+        return hash(self.selector) + hash(self.fltr)
+    
     def does_match(self, lhs, rhs, rank = None):
         if self.fltr == 'B' and rank is not None:
             r1 = []
@@ -146,7 +202,7 @@ class FilterType(object):
             elif self.fltr == 'B':
                 return self.selector.does_match(lhs, lhs, rank) and self.selector.does_match(rhs, rhs, rank)
             return False
-		
+        
 class ExpressionType(object):
     def __init__(self, op):
         self.op = op
@@ -156,19 +212,26 @@ class ExpressionType(object):
     def __str__(self):
         ret = self.op is not None and "%s " % self.op or ""
         ret += self.negate and "-" or ""
-        ret += str(self.selector)
+        ret += "%s" % self.selector
         return ret
-    
+
+    __unicode__ = __str__
+
     def __repr__(self):
         return "%s op:%s negate:%s\n[%s]" % (self.__class__.__name__, self.op, self.negate, repr(self.selector))
-            
+    
+    def __hash__(self):
+        return hash(self.selector) + hash(self.op) + hash(self.negate)
+    
 class CompositeType(object):
     def __init__(self):
         self.expressions = []
     
     def __str__(self):
-        return " ".join(map(lambda c: str(c), self.expressions))
-    
+        return " ".join(("%s" % expression for expression in self.expressions))
+
+    __unicode__ = __str__
+
     def __repr__(self):
         return "%s\n[%s]" % (self.__class__.__name__, "\n".join([repr(e) for e in self.expressions]))
             
@@ -219,17 +282,21 @@ class CompositeType(object):
                 elif op == '-':
                     res = res and not local
             return res
-		
+    
 class SelectorType(object):
     def __init__(self):
         self.composites = []
         
     def __str__(self):
-        return  ", ".join(map(lambda c: str(c), self.composites))
+        return  ", ".join(("%s" % composite for composite in self.composites))
 
+    __unicode__ = __str__
 
     def __repr__(self):
         return "%s\n[%s]" % (self.__class__.__name__, "\n".join([repr(c) for c in self.composites]))
+
+    def __hash__(self):
+        return hash(self.composites)
     
 
     def does_match(self, lhs, rhs, rank = None):

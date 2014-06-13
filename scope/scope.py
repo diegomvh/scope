@@ -1,25 +1,40 @@
 #!/usr/bin/env python
 # encoding: utf-8
+from __future__ import unicode_literals
 
-from parser import Parser
-
+from .parser import Parser
+from .types import PathType, ScopeType
 
 class Scope(object):
-    def __init__(self, scope):
-        self.path = scope and Parser.path(scope) or Parser.path("")
+    def __init__(self, path):
+        self.path = isinstance(path, PathType) and path or Parser.path(path)
 
+    @classmethod
+    def factory(cls, sources):
+        # Fast parsing
+        return cls(PathType.factory(type(sources) == type("") and sources.split() or sources))
+    
     def __str__(self):
-        return str(self.path)
+        return "%s" % self.path
 
+    def to_xml(self, text = ""):
+        return self.path.to_open_xml() + text + self.path.to_close_xml()
+        
     def has_prefix(self, rhs):
         lhsScopes = self.path.scopes
         rhsScopes = rhs.path.scopes
         i = 0
-        for i in xrange(min(len(lhsScopes), len(rhsScopes))):
+        for i in range(min(len(lhsScopes), len(rhsScopes))):
             if lhsScopes[i] != rhsScopes[i]:
                 break
         return i == len(rhsScopes)
 
+    def rootGroupName(self):
+        return self.path.rootGroup() or ""
+        
+    def __hash__(self):
+        return hash(self.path)
+    
     def __eq__(self, rhs):
         return self.path == rhs.path
     
@@ -28,17 +43,21 @@ class Scope(object):
     
     def __lt__(self, rhs):
         return self.path < self.rhs.path
-        
-    def __bool__(self, rhs):
+    
+    def __add__(self, rhs):
+        return Scope(self.path + rhs.path)
+
+    def __bool__(self):
         return bool(self.path)
 
 wildcard = Scope("x-any")
+none = Scope("")
 
 class Context(object):
     CONTEXTS = {}
     def __init__(self, left, right):
-        self.left = isinstance(left, Scope) and left or Scope(left)
-        self.right = isinstance(right, Scope) and right or Scope(right)
+        self.left = left
+        self.right = right
 
     @classmethod
     def get(cls, left, right = None):
@@ -52,10 +71,13 @@ class Context(object):
         
     def __str__(self):
         if self.left == self.right:
-            return "(l/r '%s')" % str(self.left)
+            return "(l/r '%s')" % six.text_type(self.left)
         else:
-            return "(left '%s', right '%s')" % (str(self.left), str(self.right))
-            
+            return "(left '%s', right '%s')" % (six.text_type(self.left), six.text_type(self.right))
+    
+    def __hash__(self):
+        return hash(six.text_type(self.left)) + hash(six.text_type(self.right))
+
     def __eq__(self, rhs):
         return self.left == rhs.left and self.right == rhs.right
     
@@ -69,29 +91,18 @@ class Context(object):
 class Selector(object):
     def __init__(self, selector):
         self.selector = selector and Parser.selector(selector)
-        self.previousMatch = {}
-
+        
     def __str__(self):
-        return str(self.selector)
-
+        return six.text_type(self.selector)
 
     # ------- Matching 
     def does_match(self, context, rank = None):
-        #assert isinstance(rank, list)
-        if not self.selector:
-            if rank is not None:
-                rank.append(0)
-            return True
-        if isinstance(context, (basestring, Scope)):
-            context = Context.get(context)
+        if isinstance(context, Scope):
+            context = Context(context, context)
 
-        # Search in cache
-        matchKey = (context, isinstance(rank, list))
-        if matchKey in self.previousMatch:
-            if matchKey[1]:
-                rank.append(self.previousMatch[matchKey][1])
-            return self.previousMatch[matchKey][0]
-        
-        match = context.left == wildcard or context.right == wildcard or self.selector.does_match(context.left.path, context.right.path, rank)
-        self.previousMatch[matchKey] = (match, matchKey[1] and sum(rank) or None)
-        return match
+        if self.selector:
+            return context.left == wildcard or context.right == wildcard or self.selector.does_match(context.left.path, context.right.path, rank)
+        if rank is not None:        
+            rank.append(0)
+        return True
+
