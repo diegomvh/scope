@@ -1,43 +1,24 @@
 #!/usr/bin/env python
 
+import sys
+node_type = unicode if sys.version < '3' else str
+
 from .parser import Parser
 
 class Scope(object):
-    class Node(object):
-        def __init__(self, atoms, parent):
-            self._atoms = atoms
-            self._parent = parent
-            self._retain_count = 1
+    class Node(node_type):
+        def __new__(cls, string, parent):
+            return super(Scope.Node, cls).__new__(cls, string)
     
-        def parent(self):
-            return self._parent
-
-        def __del__(self):
-            if self._parent is not None:
-                self._parent.release()
-    
-        def __bool__(self):
-            return bool(self._atoms)
-
-        def __str__(self):
-            return self._atoms
-    
-        __unicode__ = __str__
+        def __init__(self, string, parent):
+            self.parent = parent
         
-        def retain(self):
-    	        self._retain_count += 1
-    	
-        def release(self):
-            self._retain_count -= 1
-            if self._retain_count == 0:
-    	        del self
-    
         def is_auxiliary_scope(self):
-            return self._atoms.startswith("attr.") or self._atoms.startswith("dyn.") 
+            return self.startswith("attr.") or self.startswith("dyn.") 
         
         def number_of_atoms(self):
-    	        return self._atoms.count(".")
-    
+    	        return self.count(".")
+
     def __init__(self, source = None):
         self.node = None
         if isinstance(source, Scope.Node):
@@ -53,16 +34,12 @@ class Scope(object):
             for atom in source.split():
                 self.push_scope(atom)
 
-    def __del__(self):
-        if self.node is not None:
-            self.node.release()
-
     def __eq__(self, rhs):
         	n1, n2 = self.node, rhs.node
-        	while n1 and n2 and "%s" % n1 == "%s" % n1:
-        	    n1 = n1.parent()
-        	    n2 = n2.parent()
-        	return not bool(n1) and not bool(n2)
+        	while n1 and n2 and n1 == n1:
+        	    n1 = n1.parent
+        	    n2 = n2.parent
+        	return not n1 and not n2
 
     def __ne__(self, rhs):
         return not self == rhs
@@ -75,7 +52,7 @@ class Scope(object):
         n = self.node
         while True:
             res.append("%s" % n)
-            n = n.parent()
+            n = n.parent
             if n is None:
                 break
         return " ".join(res[::-1])
@@ -88,15 +65,11 @@ class Scope(object):
     
     def pop_scope(self):
         assert(self.node is not None)
-        old = self.node
         self.node == self.node.parent()
-        if self.node:
-            self.node.retain()
-        old.release()
-    
+        
     def back(self):
         assert(self.node is not None)
-        return "%s" % self.node
+        return self.node
 
     def size(self):
         res = 0
@@ -110,8 +83,8 @@ wildcard = Scope("x-any")
 
 def shared_prefix(lhs, rhs):
     return ""
-    
-def xml_difference(from, to, open = "<", close = ">"):
+
+def xml_difference(frm, to, open = "<", close = ">"):
     return ""
 
 class Context(object):

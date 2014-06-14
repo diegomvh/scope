@@ -31,32 +31,19 @@ class Parser(object):
         self.it += 1
         return True
 
-    def parse_atom(self, res):
-        if self.parse_char("*"):
-            res.append("*")
-            return True
-            
-        if self.it == self.last or (not self.source[self.it].isalnum() and ord(self.source[self.it]) < 0x80):
-            return False
-        
-        frm = self.it
-        while self.it != self.last and (self.source[self.it].isalnum() or self.source[self.it] in ['_', '-', '+'] or ord(self.source[self.it]) > 0x7F):
-            self.it += 1
-        res.append(self.source[frm:self.it])
-        return True
-
     def parse_scope(self, res):
-        rc = False
         res.anchor_to_previous = self.parse_char(">") and self.ws()
-        atoms = []
+        frm = self.it
         while True:
-            if not self.parse_atom(atoms):
+            if self.it == self.last or (not self.source[self.it].isalnum() and self.source[self.it] != '*' and ord(self.source[self.it]) < 0x80):
                 break
-            rc = True
+            while self.it != self.last and (self.source[self.it].isalnum() or self.source[self.it] in ['_', '-', '+', '*'] or ord(self.source[self.it]) > 0x7F):
+                self.it += 1
             if not self.parse_char("."):
                 break
-        res.atoms = tuple(atoms)
-        return rc
+        res.atoms = self.source[frm:self.it]
+        
+        return frm != self.it
 
     def parse_newpath(self, res):
         path = types.PathType()
@@ -67,16 +54,14 @@ class Parser(object):
         
     def parse_path(self, res):
         res.anchor_to_bol = self.parse_char("^") and self.ws()
-        scopes = []
         while True:
             scope = types.ScopeType()
             if not self.parse_scope(scope):
                 break
-            scopes.append(scope)
+            res.scopes.append(scope)
             if not self.ws():
                 break
-                
-        res.scopes = tuple(scopes)
+
         res.anchor_to_eol = self.parse_char("$")
         return True
 
@@ -133,18 +118,6 @@ class Parser(object):
         return rc
     
     # = API =
-    @staticmethod
-    def scope(source):
-        scope = types.ScopeType()
-        if Parser(source).parse_scope(scope):
-            return scope
-            
-    @staticmethod
-    def path(source):
-        path = types.PathType()
-        if Parser(source).parse_path(path):
-            return path
-
     @staticmethod
     def selector(source):
         selector = types.SelectorType()

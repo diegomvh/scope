@@ -68,20 +68,23 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertTrue(selector.does_match(Context(
             Scope.factory("source.python punctuation.definition.list.begin.python"),
             Scope.factory("source.python punctuation.definition.list.end.python")), rank))
-            
+    
 if __name__ == '__main__':
     from nscope import Scope as NewScope
+    from nscope.types import prefix_match
     from scope import Scope
     from time import time
     now = time()
-    for _ in range(10):
+    for _ in range(1000):
         scope = NewScope("source.python punctuation.definition.list.begin.python")
         scope.push_scope("punctuation.definition")
-        print(scope)
     print(time() - now)
     now = time()
-    for _ in range(10):
+    for _ in range(1000):
         Scope.factory("source.python punctuation.definition.list.begin.python")
         Scope.factory("source.python punctuation.definition.list.begin.python punctuation.definition")
     print(time() - now)
+    print(prefix_match(
+        "punctuation.*.list.*.python", 
+        "punctuation.definition.list.begin.python"))
     #unittest.main()
