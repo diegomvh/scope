@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 import sys
-node_type = unicode if sys.version < '3' else str
+base_node_type = unicode if sys.version < '3' else str
 
 from .parser import Parser
 
 class Scope(object):
-    class Node(node_type):
+    class Node(base_node_type):
         def __new__(cls, string, parent):
             return super(Scope.Node, cls).__new__(cls, string)
     

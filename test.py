@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from scope import Scope, Context, Selector
+from nscope import Scope, Context, Selector
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
@@ -62,6 +62,12 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope.factory("foo bar baz foo bar baz")), True)
         self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope.factory("foo foo bar baz foo bar baz")), False)
 
+    def test_dollar(self):
+        dyn = Scope.factory("foo bar")
+        dyn.push_scope("dyn.selection")
+        self.assertEqual(Selector("foo bar$").does_match(dyn), True);
+        self.assertEqual(Selector("foo bar dyn$").does_match(dyn), False);
+        self.assertEqual(Selector("foo bar dyn").does_match(dyn), True);
 
     def test_anchor(self):
         self.assertEqual(Selector("^ foo").does_match(Scope.factory("foo bar")), True)
