@@ -111,9 +111,9 @@ class Context(object):
 
     def __str__(self):
         if self.left == self.right:
-            return "(l/r '%s')" % six.text_type(self.left)
+            return "(l/r '%s')" % self.left
         else:
-            return "(left '%s', right '%s')" % (six.text_type(self.left), six.text_type(self.right))
+            return "(left '%s', right '%s')" % (self.left, self.right)
 
 class Selector(object):
     def __init__(self, source = None):
@@ -122,7 +122,7 @@ class Selector(object):
             self._selector = Parser.selector(source)
 
     def __str__(self):
-        return self._selector and six.text_type(self._selector) or ""
+        return self._selector and "%s" % self._selector or ""
 
     # ------- Matching 
     def does_match(self, context, rank = None):

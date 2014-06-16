@@ -16,7 +16,7 @@ def prefix_match(lhs, rhs):
 class ScopeType(object):
     def __init__(self):
         self.anchor_to_previous = False
-        self.atoms = ()
+        self.atoms = []
 
     @classmethod
     def factory(cls, atoms):
@@ -54,7 +54,7 @@ class PathType(object):
     def __init__(self):
         self.anchor_to_bol = False
         self.anchor_to_eol = False
-        self.scopes = ()
+        self.scopes = []
 
     @classmethod
     def factory(cls, scopes):

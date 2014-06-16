@@ -48,14 +48,12 @@ class Parser(object):
     def parse_scope(self, res):
         rc = False
         res.anchor_to_previous = self.parse_char(">") and self.ws()
-        atoms = []
         while True:
-            if not self.parse_atom(atoms):
+            if not self.parse_atom(res.atoms):
                 break
             rc = True
             if not self.parse_char("."):
                 break
-        res.atoms = tuple(atoms)
         return rc
 
     def parse_newpath(self, res):
@@ -67,16 +65,14 @@ class Parser(object):
         
     def parse_path(self, res):
         res.anchor_to_bol = self.parse_char("^") and self.ws()
-        scopes = []
         while True:
             scope = types.ScopeType()
             if not self.parse_scope(scope):
                 break
-            scopes.append(scope)
+            res.scopes.append(scope)
             if not self.ws():
                 break
-                
-        res.scopes = tuple(scopes)
+
         res.anchor_to_eol = self.parse_char("$")
         return True
 

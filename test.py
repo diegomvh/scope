@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from nscope import Scope, Context, Selector
+from scope import Scope, Context, Selector
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
@@ -87,12 +87,26 @@ class ScopeSelectorTests(unittest.TestCase):
             Selector("text.html"),
             Selector("text")
         ]
-        lastRank = 1
-        for selector in matchingSelectors:
-            rank = []
-            self.assertTrue(selector.does_match(textScope, rank))
-            self.assertLessEqual(sum(rank), lastRank)
-            lastRank = sum(rank)
+        for _ in range(10000):
+            lastRank = 1
+            for selector in matchingSelectors:
+                rank = []
+                self.assertTrue(selector.does_match(textScope, rank))
+                self.assertLessEqual(rank[0], lastRank)
+                lastRank = rank[0]
+
+    def test_rank(self):
+        leftScope = Scope.factory("text.html.php meta.embedded.block.php source.php comment.block.php")
+        rightScope = Scope.factory("text.html.php meta.embedded.block.php source.php")
+        context = Context(leftScope, rightScope)
+        
+        globalSelector = Selector("comment.block | L:comment.block")
+        phpSelector = Selector("L:source.php - string")
+        
+        globalRank, phpRank = [], []
+        self.assertTrue(globalSelector.does_match(context, globalRank))
+        self.assertTrue(phpSelector.does_match(context, phpRank))
+        self.assertLessEqual(phpRank[0], globalRank[0])
 
     def test_match(self):
         match = lambda sel, scope: Selector(sel).does_match(scope)
@@ -153,5 +167,4 @@ class ScopeSelectorTests(unittest.TestCase):
             Scope.factory("source.python punctuation.definition.list.end.python")), rank))
     
 if __name__ == '__main__':
-    from time import time
     unittest.main()

@@ -130,7 +130,7 @@ class PathType(object):
                 if rank is not None:
                     score = reduce(
                         lambda s, k: s + (1.0 / pow(2, power - k)),
-                        range(sel.atoms.count("."), 0, -1),
+                        range(sel.atoms.count("."), -1, -1),
                         score
                     )
 
