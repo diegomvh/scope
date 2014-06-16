@@ -7,21 +7,12 @@ ROOT = ( "comment", "constant", "entity", "invalid", "keyword", "markup",
 def prefix_match(lhs, rhs):
     if len(lhs) > len(rhs):
         return False
-
-    llhs, lrhs = len(lhs), len(rhs)
-    ilhs = irhs = 0
     
-    while ilhs < llhs and irhs < lrhs:
-        if lhs[ilhs] == rhs[irhs]:
-            irhs += 1
-            ilhs += 1
-        elif lhs[ilhs] == "*":
-            ilhs += 1
-            while irhs < lrhs and rhs[irhs] != ".":
-                irhs += 1
-        else:
+    for l, r in zip(lhs.split("."), rhs.split(".")):
+        if l != r and l != "*":
             return False
-    return ilhs == llhs and (irhs == lrhs or rhs[irhs] == ".")
+
+    return True
 
 class ScopeType(object):
     def __init__(self):
@@ -102,72 +93,64 @@ class PathType(object):
     
     def does_match(self, unused, scope, rank = None):
         node = scope.node
-        sel = -1 # rbegin
+        sel_index = len(self.scopes) - 1
+        sel = self.scopes[sel_index]
+        score = 0.0
         
         btNode = None
+        btSelector_index = -1
         btSelector = None
-        btScore = 0
+        btScore = 0.0
+
+        power = 0.0
 
         if self.anchor_to_eol:
             while node and node.is_auxiliary_scope():
                 if rank is not None:
                     power += node.number_of_atoms()
-                    node = node.parent
-            btSelector = self.scopes[sel]
+                node = node.parent
+            btSelector_index = sel_index
+            btSelector = self.scopes[sel_index]
 
-        while node and self.scopes[sel] != self.scopes[0]:
+        while node and sel_index != -1:
             if rank is not None:
                 power += node.number_of_atoms()
-            
-            isRedundantNonBOLMatch = self.anchor_to_bol and node.parent and self.scopes[sel + 1] == self.scopes[0]
-            if not isRedundantNonBOLMatch and prefix_match(self.scopes[sel].atoms, node):
-                if self.scopes[sel].anchor_to_previous:
-                    	if btSelector == self.scopes.rend())
-                    # Aca paso 1
-                elif 
-                
-            # Hasta aca    
-            assert i; assert j
-            assert i-1 < len(scope.scopes)
-            assert j-1 < len(self.scopes)
-            anchor_to_previous = self.scopes[j-1].anchor_to_previous
-            
-            if (anchor_to_previous or (anchor_to_bol and j == 1)) and not check_next:
-                reset_score = score
-                reset_i = i
-                reset_j = j
-                
-            power += len(scope.scopes[i-1].atoms)
-            if prefix_match(self.scopes[j-1].atoms, scope.scopes[i-1].atoms):
-                for k in range(len(self.scopes[j-1].atoms)):
-                    score += 1 / pow(2, power - k)
-                j -= 1
-                check_next = anchor_to_previous
-            elif check_next:
-                i = reset_i
-                j = reset_j
-                score = reset_score
-                check_next = False
-            i -= 1;
-            if anchor_to_eol:
-                if i != size_i and j == size_j:
-                    break;
-                else:
-                    anchor_to_eol = False
 
-            if anchor_to_bol and j == 0 and i != 0:
-                i = reset_i - 1
-                j = reset_j
-                score = reset_score
-                check_next = False
-        
-        	if rank is not None:
-        	    rank = sel == self.scopes.rend() and score or 0
+            isRedundantNonBOLMatch = self.anchor_to_bol and node.parent and sel_index - 1 == -1
+            if not isRedundantNonBOLMatch and prefix_match(sel.atoms, node):
+                if sel.anchor_to_previous:
+                    if btSelector_index == -1:
+                        btNode = node
+                        btSelector_index = sel_index
+                        btSelector = sel
+                        btScore = score
+                elif btSelector_index != -1:
+                    btSelector_index = -1
 
-return sel == this->scopes.rend();
-        if j == 0 and rank is not None:
-            rank.append(score)
-        return j == 0
+                if rank is not None:
+                    score = reduce(
+                        lambda s, k: s + (1.0 / pow(2, power - k)),
+                        range(sel.atoms.count("."), 0, -1),
+                        score
+                    )
+
+                sel_index -= 1
+                sel = self.scopes[sel_index]
+            elif btSelector_index != -1:
+                if not btNode:
+                    break
+                node = btNode
+                sel_index = btSelector_index
+                score = btScore
+                sel = btSelector
+                btSelector_index = -1
+                btSelector = None
+            node = node.parent
+
+        if rank is not None:
+    	    rank.append(sel_index == -1 and score or 0)
+
+        return sel_index == -1
 
 class GroupType(object):
     def __init__(self):

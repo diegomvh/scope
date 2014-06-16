@@ -23,49 +23,49 @@ class Scope(object):
         self.node = None
         if isinstance(source, Scope.Node):
             # From node
-            self.node = node
-            self.node.retain()
+            self.node = source
         elif isinstance(source, Scope):
             # By clone
             self.node = source.node
-            self.node.retain()
-        elif source is not None:
+        elif source:
             # From source string
             for atom in source.split():
                 self.push_scope(atom)
+
+    @classmethod
+    def factory(cls, source):
+        return cls(source)
 
     def __eq__(self, rhs):
         	n1, n2 = self.node, rhs.node
         	while n1 and n2 and n1 == n1:
         	    n1 = n1.parent
         	    n2 = n2.parent
-        	return not n1 and not n2
+        	return n1 is None and n2 is None
 
     def __ne__(self, rhs):
         return not self == rhs
     
-    def __bool__(self):
+    def __nonzero__(self):
         return not self.empty()
     
     def __str__(self):
         res = []
         n = self.node
-        while True:
+        while n is not None:
             res.append("%s" % n)
             n = n.parent
-            if n is None:
-                break
         return " ".join(res[::-1])
     
     def empty(self):
-        return bool(self.node)
+        return self.node is None
 
     def push_scope(self, atom):
         self.node = Scope.Node(atom, self.node)
     
     def pop_scope(self):
         assert(self.node is not None)
-        self.node == self.node.parent()
+        self.node = self.node.parent
         
     def back(self):
         assert(self.node is not None)
@@ -74,10 +74,18 @@ class Scope(object):
     def size(self):
         res = 0
         n = self.node
-        while n.parent():
+        while n is not None:
             res += 1
-            n = n.parent()
+            n = n.parent
         return res
+
+    def has_prefix(self, rhs):
+        lhs = Scope(self)
+        rhs = Scope(rhs)
+        lhsSize, rhsSize = lhs.size(), rhs.size()
+        for _ in range(lhsSize - rhsSize):
+            lhs.pop_scope()
+        return lhs == rhs
 
 wildcard = Scope("x-any")
 
@@ -118,8 +126,10 @@ class Selector(object):
 
     # ------- Matching 
     def does_match(self, context, rank = None):
+        if not isinstance(context, Context):
+            context = Context(context)
         if self._selector:
-            return context.left == wildcard or context.right == wildcard or self.selector.does_match(context.left.path, context.right.path, rank)
+            return context.left == wildcard or context.right == wildcard or self._selector.does_match(context.left, context.right, rank)
         if rank is not None:        
             rank.append(0)
         return True
