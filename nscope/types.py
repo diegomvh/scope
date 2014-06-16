@@ -103,32 +103,29 @@ class PathType(object):
     def does_match(self, unused, scope, rank = None):
         node = scope.node
         sel = -1 # rbegin
-        j = len(self.scopes)
-        size_j = j;
         
         btNode = None
         btSelector = None
         btScore = 0
 
-        anchor_to_bol = self.anchor_to_bol
-        anchor_to_eol = self.anchor_to_eol
-        check_next = False
-        reset_score = 0
-        score = 0.0
-        power = 0.0
-
         if self.anchor_to_eol:
             while node and node.is_auxiliary_scope():
                 if rank is not None:
                     power += node.number_of_atoms()
-                    node = node.parent()
+                    node = node.parent
             btSelector = self.scopes[sel]
 
         while node and self.scopes[sel] != self.scopes[0]:
             if rank is not None:
                 power += node.number_of_atoms()
             
-            isRedundantNonBOLMatch = self.anchor_to_bol and node.parent() and self.scopes[sel + 1] == self.scopes[0]
+            isRedundantNonBOLMatch = self.anchor_to_bol and node.parent and self.scopes[sel + 1] == self.scopes[0]
+            if not isRedundantNonBOLMatch and prefix_match(self.scopes[sel].atoms, node):
+                if self.scopes[sel].anchor_to_previous:
+                    	if btSelector == self.scopes.rend())
+                    # Aca paso 1
+                elif 
+                
             # Hasta aca    
             assert i; assert j
             assert i-1 < len(scope.scopes)
@@ -163,7 +160,11 @@ class PathType(object):
                 j = reset_j
                 score = reset_score
                 check_next = False
-            
+        
+        	if rank is not None:
+        	    rank = sel == self.scopes.rend() and score or 0
+
+return sel == this->scopes.rend();
         if j == 0 and rank is not None:
             rank.append(score)
         return j == 0
