@@ -46,7 +46,7 @@ class Scope(object):
     def __ne__(self, rhs):
         return not self == rhs
     
-    def __nonzero__(self):
+    def __bool__(self):
         return not self.empty()
     
     def __str__(self):
@@ -56,6 +56,10 @@ class Scope(object):
             res.append("%s" % n)
             n = n.parent
         return " ".join(res[::-1])
+    
+    # --------- Python 2
+    __nonzero__ = __bool__
+    __unicode__ = __str__
     
     def empty(self):
         return self.node is None

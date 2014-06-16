@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+from functools import reduce
+
 ROOT = ( "comment", "constant", "entity", "invalid", "keyword", "markup",
     "meta", "storage", "string", "support", "variable" )
 

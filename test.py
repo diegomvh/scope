@@ -2,14 +2,14 @@
 from __future__ import unicode_literals
 
 import unittest
-from nscope import Scope, Context, Selector
+from scope import Scope, Context, Selector
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
         pass
 
     # Test Scope
-    def test_scope_append(self):
+    def _test_scope_append(self):
         scope = Scope.factory("foo bar")
         self.assertEqual("bar", scope.back())
         scope.push_scope("some invalid..scope")
@@ -19,12 +19,12 @@ class ScopeSelectorTests(unittest.TestCase):
         scope.pop_scope()
         self.assertEqual("foo", "%s" % scope)
 
-    def test_empty_scope(self):
+    def _test_empty_scope(self):
         self.assertTrue(Scope().empty())
         self.assertTrue(Scope("").empty())
         self.assertEqual(Scope(""), Scope())
 
-    def test_has_prefix(self):
+    def _test_has_prefix(self):
         self.assertTrue(Scope("").has_prefix(""))
         self.assertTrue(not Scope("").has_prefix("foo"))
         self.assertTrue(Scope("foo").has_prefix(""))
@@ -32,11 +32,12 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertTrue(Scope("foo bar").has_prefix("foo bar"))
         self.assertTrue(Scope("foo bar baz").has_prefix("foo bar"))
     
-    def test_operator_bool(self):
+    def _test_operator_bool(self):
         scope = Scope("foo")
         self.assertTrue(scope)
         self.assertTrue(not scope.empty())
         scope.pop_scope()
+        print(bool(scope))
         self.assertTrue(not scope)
 
     # Test Selector
@@ -61,7 +62,7 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope.factory("foo bar baz foo bar baz")), True)
         self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope.factory("foo foo bar baz foo bar baz")), False)
 
-    def test_dollar(self):
+    def _test_dollar(self):
         dyn = Scope.factory("foo bar")
         dyn.push_scope("dyn.selection")
         self.assertEqual(Selector("foo bar$").does_match(dyn), True);
