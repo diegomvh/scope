@@ -2,15 +2,46 @@
 from __future__ import unicode_literals
 
 import unittest
-from scope.scope import Scope, Context, Selector
+from nscope import Scope, Context, Selector
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
         pass
 
+    # Test Scope
+    def test_scope_append(self):
+        scope = Scope.factory("foo bar")
+        self.assertEqual("bar", scope.back())
+        scope.push_scope("some invalid..scope")
+        self.assertEqual("some invalid..scope", scope.back())
+        scope.pop_scope()
+        self.assertEqual("foo bar", "%s" % scope)
+        scope.pop_scope()
+        self.assertEqual("foo", "%s" % scope)
+
+    def test_empty_scope(self):
+        self.assertTrue(Scope().empty())
+        self.assertTrue(Scope("").empty())
+        self.assertEqual(Scope(""), Scope())
+
+    def test_has_prefix(self):
+        self.assertTrue(Scope("").has_prefix(""))
+        self.assertTrue(not Scope("").has_prefix("foo"))
+        self.assertTrue(Scope("foo").has_prefix(""))
+        self.assertTrue(not Scope("foo").has_prefix("foo bar"))
+        self.assertTrue(Scope("foo bar").has_prefix("foo bar"))
+        self.assertTrue(Scope("foo bar baz").has_prefix("foo bar"))
+    
+    def test_operator_bool(self):
+        scope = Scope("foo")
+        self.assertTrue(scope)
+        self.assertTrue(not scope.empty())
+        scope.pop_scope()
+        self.assertTrue(not scope)
+
+    # Test Selector
     def test_selector(self):
         self.assertEqual(Selector("source.python meta.function.python, source.python meta.class.python").does_match(Scope.factory("source.python meta.class.python")), True)
-
 
     def test_child_selector(self):
         self.assertEqual(Selector("foo fud").does_match(Scope.factory("foo bar fud")), True)
@@ -42,6 +73,7 @@ class ScopeSelectorTests(unittest.TestCase):
 
     def test_scope_selector(self):
         textScope = Scope.factory("text.html.markdown meta.paragraph.markdown markup.bold.markdown")
+
         matchingSelectors = [
             Selector("text.* markup.bold"),
             Selector("text markup.bold"),
@@ -62,6 +94,57 @@ class ScopeSelectorTests(unittest.TestCase):
             self.assertLessEqual(sum(rank), lastRank)
             lastRank = sum(rank)
 
+    def test_match(self):
+        match = lambda sel, scope: Selector(sel).does_match(scope)
+
+        self.assertTrue( match("foo", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue( match("foo bar", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue( match("foo bar baz", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue( match("foo baz", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue( match("foo.*", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue( match("foo.qux", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue( match("foo.qux baz.*.garply", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue( match("bar", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue(not match("foo qux", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue(not match("foo.bar", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue(not match("foo.qux baz.garply", "foo.qux bar.quux.grault baz.corge.garply"));
+        self.assertTrue(not match("bar.*.baz", "foo.qux bar.quux.grault baz.corge.garply"));
+        
+        self.assertTrue( match("foo > bar", "foo bar baz bar baz"));
+        self.assertTrue( match("bar > baz", "foo bar baz bar baz"));
+        self.assertTrue( match("foo > bar baz", "foo bar baz bar baz"));
+        self.assertTrue( match("foo bar > baz", "foo bar baz bar baz"));
+        self.assertTrue( match("foo > bar > baz", "foo bar baz bar baz"));
+        self.assertTrue( match("foo > bar bar > baz", "foo bar baz bar baz"));
+        self.assertTrue(not match("foo > bar > bar > baz", "foo bar baz bar baz"));
+        
+        self.assertTrue( match("baz $", "foo bar baz bar baz"));
+        self.assertTrue( match("bar > baz $", "foo bar baz bar baz"));
+        self.assertTrue( match("bar > baz $", "foo bar baz bar baz"));
+        self.assertTrue( match("foo bar > baz $", "foo bar baz bar baz"));
+        self.assertTrue( match("foo > bar > baz", "foo bar baz bar baz"));
+        self.assertTrue(not match("foo > bar > baz $", "foo bar baz bar baz"));
+        self.assertTrue(not match("bar $", "foo bar baz bar baz"));
+        
+        self.assertTrue( match("baz $", "foo bar baz bar baz dyn.qux"));
+        self.assertTrue( match("bar > baz $", "foo bar baz bar baz dyn.qux"));
+        self.assertTrue( match("bar > baz $", "foo bar baz bar baz dyn.qux"));
+        self.assertTrue( match("foo bar > baz $", "foo bar baz bar baz dyn.qux"));
+        self.assertTrue(not match("foo > bar > baz $", "foo bar baz bar baz dyn.qux"));
+        self.assertTrue(not match("bar $", "foo bar baz bar baz dyn.qux"));
+        
+        self.assertTrue( match("^ foo", "foo bar foo bar baz"));
+        self.assertTrue( match("^ foo > bar", "foo bar foo bar baz"));
+        self.assertTrue( match("^ foo bar > baz", "foo bar foo bar baz"));
+        self.assertTrue( match("^ foo > bar baz", "foo bar foo bar baz"));
+        self.assertTrue(not match("^ foo > bar > baz", "foo bar foo bar baz"));
+        self.assertTrue(not match("^ bar", "foo bar foo bar baz"));
+        
+        self.assertTrue( match("foo > bar > baz", "foo bar baz foo bar baz"));
+        self.assertTrue( match("^ foo > bar > baz", "foo bar baz foo bar baz"));
+        self.assertTrue( match("foo > bar > baz $", "foo bar baz foo bar baz"));
+        self.assertTrue(not match("^ foo > bar > baz $", "foo bar baz foo bar baz"));
+
     def test_context(self):
         selector = Selector("source & ((L:punctuation.section.*.begin & R:punctuation.section.*.end) | (L:punctuation.definition.*.begin & R:punctuation.definition.*.end)) - string")
         rank = []
@@ -70,21 +153,5 @@ class ScopeSelectorTests(unittest.TestCase):
             Scope.factory("source.python punctuation.definition.list.end.python")), rank))
     
 if __name__ == '__main__':
-    from nscope import Scope as NewScope
-    from nscope.types import prefix_match
-    from scope import Scope
     from time import time
-    now = time()
-    for _ in range(1000):
-        scope = NewScope("source.python punctuation.definition.list.begin.python")
-        scope.push_scope("punctuation.definition")
-    print(time() - now)
-    now = time()
-    for _ in range(1000):
-        Scope.factory("source.python punctuation.definition.list.begin.python")
-        Scope.factory("source.python punctuation.definition.list.begin.python punctuation.definition")
-    print(time() - now)
-    print(prefix_match(
-        "punctuation.*.list.*.python", 
-        "punctuation.definition.list.begin.python"))
-    #unittest.main()
+    unittest.main()
