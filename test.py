@@ -50,7 +50,6 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertEqual(Selector("foo > foo > fud").does_match(Scope.factory("foo foo fud fud")), True)
         self.assertEqual(Selector("foo > foo > fud").does_match(Scope.factory("foo foo fud baz")), True)
         self.assertEqual(Selector("foo > foo fud > fud").does_match(Scope.factory("foo foo bar fud fud")), True)
-        
 
     def test_mixed(self):
         self.assertEqual(Selector("^ foo > bar").does_match(Scope.factory("foo bar foo")), True)
@@ -75,7 +74,6 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertEqual(Selector("^ foo").does_match(Scope.factory("foo bar foo")), True)
         self.assertEqual(Selector("foo $").does_match(Scope.factory("foo bar")), False)
         self.assertEqual(Selector("bar $").does_match(Scope.factory("foo bar")), True)
-
 
     def test_scope_selector(self):
         textScope = Scope.factory("text.html.markdown meta.paragraph.markdown markup.bold.markdown")
