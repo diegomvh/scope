@@ -9,13 +9,13 @@ class Scope(object):
     class Node(base_node_type):
         def __new__(cls, string, parent):
             return super(Scope.Node, cls).__new__(cls, string)
-    
+
         def __init__(self, string, parent):
             self.parent = parent
-        
+
         def is_auxiliary_scope(self):
             return self.startswith("attr.") or self.startswith("dyn.") 
-        
+
         def number_of_atoms(self):
     	        return self.count(".")
 
@@ -29,7 +29,6 @@ class Scope(object):
             self.node = source.node
         elif source:
             # From source string
-            print(source)
             for atom in source.split():
                 self.push_scope(atom)
 
@@ -41,18 +40,20 @@ class Scope(object):
         return id(self.node)
 
     def __eq__(self, rhs):
-        	n1, n2 = self.node, rhs.node
-        	while n1 and n2 and n1 == n1:
-        	    n1 = n1.parent
-        	    n2 = n2.parent
-        	return n1 is None and n2 is None
+        if hash(self) == hash(rhs):
+            return True
+        n1, n2 = self.node, rhs.node
+        while n1 and n2 and n1 == n2:
+            n1 = n1.parent
+            n2 = n2.parent
+        return n1 is None and n2 is None
 
     def __ne__(self, rhs):
         return not self == rhs
-    
+
     def __bool__(self):
         return not self.empty()
-    
+
     def __str__(self):
         res = []
         n = self.node
@@ -60,11 +61,11 @@ class Scope(object):
             res.append("%s" % n)
             n = n.parent
         return " ".join(res[::-1])
-    
+
     # --------- Python 2
     __nonzero__ = __bool__
     __unicode__ = __str__
-    
+
     def empty(self):
         return self.node is None
 
@@ -74,7 +75,7 @@ class Scope(object):
     def pop_scope(self):
         assert(self.node is not None)
         self.node = self.node.parent
-        
+
     def back(self):
         assert(self.node is not None)
         return self.node

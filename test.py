@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from scope import Scope, Context, Selector
+from nscope import Scope, Context, Selector
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
@@ -40,6 +40,26 @@ class ScopeSelectorTests(unittest.TestCase):
         print(bool(scope))
         self.assertTrue(not scope)
 
+    def test_equal_bool(self):
+        s1 = Scope("foo")
+        s2 = Scope("foo")
+        s3 = Scope("foo bar")
+        self.assertNotEqual(hash(s1), hash(s2))
+        self.assertNotEqual(hash(s2), hash(s3))
+        self.assertEqual(s1, s2)
+        s2.push_scope("bar")
+        self.assertEqual(s2, s3)
+        s1 = Scope("foo")
+        s2 = Scope(s1)
+        self.assertEqual(hash(s1), hash(s2))
+        self.assertEqual(s1, s2)
+        s2.push_scope("bar")
+        s1.push_scope("fud")
+        self.assertNotEqual(s1, s2)
+        s1.pop_scope()
+        s2.pop_scope()
+        self.assertEqual(s1, s2)
+        
     # Test Selector
     def test_selector(self):
         self.assertEqual(Selector("source.python meta.function.python, source.python meta.class.python").does_match(Scope.factory("source.python meta.class.python")), True)
@@ -92,13 +112,12 @@ class ScopeSelectorTests(unittest.TestCase):
             Selector("text.html"),
             Selector("text")
         ]
-        for _ in range(10000):
-            lastRank = 1
-            for selector in matchingSelectors:
-                rank = []
-                self.assertTrue(selector.does_match(textScope, rank))
-                self.assertLessEqual(rank[0], lastRank)
-                lastRank = rank[0]
+        lastRank = 1
+        for selector in matchingSelectors:
+            rank = []
+            self.assertTrue(selector.does_match(textScope, rank))
+            self.assertLessEqual(rank[0], lastRank)
+            lastRank = rank[0]
 
     def test_rank(self):
         leftScope = Scope.factory("text.html.php meta.embedded.block.php source.php comment.block.php")
