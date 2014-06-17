@@ -29,12 +29,16 @@ class Scope(object):
             self.node = source.node
         elif source:
             # From source string
+            print(source)
             for atom in source.split():
                 self.push_scope(atom)
 
     @classmethod
     def factory(cls, source):
         return cls(source)
+
+    def __hash__(self):
+        return id(self.node)
 
     def __eq__(self, rhs):
         	n1, n2 = self.node, rhs.node
