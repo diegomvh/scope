@@ -60,6 +60,24 @@ class ScopeSelectorTests(unittest.TestCase):
         s2.pop_scope()
         self.assertEqual(s1, s2)
         
+    def test_hash(self):
+        slist = []
+        sdict = {}
+        s1 = Scope("foo")
+        s2 = Scope(s1)
+        slist.append(s1)
+        slist.append(s2)
+        sdict[s1] = "foo"
+        sdict[s2] = "foo"
+        s1.push_scope("bar")
+        print(s1 in slist)
+        print(s1 in sdict)
+        print(s2 in sdict)
+        print(repr(s1))
+        print(s1, sdict, slist)
+        print(s2, sdict, slist)
+        print([ "%s" % k for k in sdict.keys() ])
+
     # Test Selector
     def test_selector(self):
         self.assertEqual(Selector("source.python meta.function.python, source.python meta.class.python").does_match(Scope.factory("source.python meta.class.python")), True)

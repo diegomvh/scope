@@ -3,9 +3,6 @@
 
 from functools import reduce
 
-ROOT = ( "comment", "constant", "entity", "invalid", "keyword", "markup",
-    "meta", "storage", "string", "support", "variable" )
-
 def prefix_match(lhs, rhs):
     if len(lhs) > len(rhs):
         return False
@@ -66,12 +63,6 @@ class PathType(object):
 
     def to_close_xml(self):
         return "".join(("</%s>" % scope for scope in self.scopes[::-1]))
-                
-    def rootGroup(self):
-        for scope in self.scopes[::-1]:
-            for atom in scope.atoms:
-                if atom in ROOT:
-                    return atom
                 
     def __repr__(self):
         return "%s anchor_to_bol:%s anchor_to_eol:%s\n[%s]" % (self.__class__.__name__, self.anchor_to_bol, self.anchor_to_eol, "\n".join([repr(s) for s in self.scopes]))

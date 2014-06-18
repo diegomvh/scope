@@ -5,6 +5,9 @@ base_node_type = unicode if sys.version < '3' else str
 
 from .parser import Parser
 
+ROOTS = ( "comment", "constant", "entity", "invalid", "keyword", "markup",
+"meta", "storage", "string", "support", "variable" )            
+
 class Scope(object):
     class Node(base_node_type):
         def __new__(cls, string, parent):
@@ -61,10 +64,13 @@ class Scope(object):
             res.append("%s" % n)
             n = n.parent
         return " ".join(res[::-1])
-
+    
     # --------- Python 2
     __nonzero__ = __bool__
     __unicode__ = __str__
+
+    def clone(self):
+        return Scope(self)
 
     def empty(self):
         return self.node is None
@@ -95,6 +101,14 @@ class Scope(object):
         for _ in range(lhsSize - rhsSize):
             lhs.pop_scope()
         return lhs == rhs
+    
+    def rootGroupName(self):
+        node = self.node
+        while node is not None:
+            for atom in node.split("."):
+                if atom in ROOTS:
+                    return atom
+                node = node.parent
 
 wildcard = Scope("x-any")
 
