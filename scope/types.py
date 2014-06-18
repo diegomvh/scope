@@ -34,7 +34,7 @@ class ScopeType(object):
         return "%s anchor_to_previous:%s\n[%s]" % (self.__class__.__name__, self.anchor_to_previous, "\n".join([repr(a) for a in self.atoms]))
 
     def __hash__(self):
-        return hash(self.anchor_to_previous) + hash(self.atoms)
+        return hash(self.anchor_to_previous) + hash(tuple(self.atoms))
     
     def __eq__(self, rhs):
         return self.atoms == rhs.atoms
@@ -86,7 +86,7 @@ class PathType(object):
         return "%s anchor_to_bol:%s anchor_to_eol:%s\n[%s]" % (self.__class__.__name__, self.anchor_to_bol, self.anchor_to_eol, "\n".join([repr(s) for s in self.scopes]))
 
     def __hash__(self):
-        return hash(self.anchor_to_bol) + hash(self.anchor_to_eol) + hash(self.scopes)
+        return hash(self.anchor_to_bol) + hash(self.anchor_to_eol) + hash(tuple(self.scopes))
 
     def __eq__(self, rhs):
         return self.scopes == rhs.scopes

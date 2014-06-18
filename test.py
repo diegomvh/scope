@@ -9,7 +9,7 @@ class ScopeSelectorTests(unittest.TestCase):
         pass
 
     # Test Scope
-    def _test_scope_append(self):
+    def test_scope_append(self):
         scope = Scope.factory("foo bar")
         self.assertEqual("bar", scope.back())
         scope.push_scope("some invalid..scope")
@@ -19,12 +19,12 @@ class ScopeSelectorTests(unittest.TestCase):
         scope.pop_scope()
         self.assertEqual("foo", "%s" % scope)
 
-    def _test_empty_scope(self):
+    def test_empty_scope(self):
         self.assertTrue(Scope().empty())
         self.assertTrue(Scope("").empty())
         self.assertEqual(Scope(""), Scope())
 
-    def _test_has_prefix(self):
+    def test_has_prefix(self):
         self.assertTrue(Scope("").has_prefix(""))
         self.assertTrue(not Scope("").has_prefix("foo"))
         self.assertTrue(Scope("foo").has_prefix(""))
@@ -32,26 +32,23 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertTrue(Scope("foo bar").has_prefix("foo bar"))
         self.assertTrue(Scope("foo bar baz").has_prefix("foo bar"))
     
-    def _test_operator_bool(self):
+    def test_operator_bool(self):
         scope = Scope("foo")
         self.assertTrue(scope)
         self.assertTrue(not scope.empty())
         scope.pop_scope()
-        print(bool(scope))
         self.assertTrue(not scope)
 
     def test_equal_bool(self):
         s1 = Scope("foo")
         s2 = Scope("foo")
         s3 = Scope("foo bar")
-        self.assertNotEqual(hash(s1), hash(s2))
-        self.assertNotEqual(hash(s2), hash(s3))
         self.assertEqual(s1, s2)
+        self.assertNotEqual(s2, s3)
         s2.push_scope("bar")
         self.assertEqual(s2, s3)
         s1 = Scope("foo")
         s2 = Scope(s1)
-        self.assertEqual(hash(s1), hash(s2))
         self.assertEqual(s1, s2)
         s2.push_scope("bar")
         s1.push_scope("fud")
@@ -82,7 +79,7 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope.factory("foo bar baz foo bar baz")), True)
         self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope.factory("foo foo bar baz foo bar baz")), False)
 
-    def _test_dollar(self):
+    def test_dollar(self):
         dyn = Scope.factory("foo bar")
         dyn.push_scope("dyn.selection")
         self.assertEqual(Selector("foo bar$").does_match(dyn), True);
@@ -98,7 +95,7 @@ class ScopeSelectorTests(unittest.TestCase):
 
     def test_scope_selector(self):
         textScope = Scope.factory("text.html.markdown meta.paragraph.markdown markup.bold.markdown")
-
+        
         matchingSelectors = [
             Selector("text.* markup.bold"),
             Selector("text markup.bold"),
