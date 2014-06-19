@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from nscope import Scope, Context, Selector, attributes
+from nscope import Scope, Context, Selector, attributes, xml_difference
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
@@ -10,7 +10,7 @@ class ScopeSelectorTests(unittest.TestCase):
 
     # Test Scope
     def test_scope_append(self):
-        scope = Scope.factory("foo bar")
+        scope = Scope("foo bar")
         self.assertEqual("bar", scope.back())
         scope.push_scope("some invalid..scope")
         self.assertEqual("some invalid..scope", scope.back())
@@ -77,42 +77,42 @@ class ScopeSelectorTests(unittest.TestCase):
 
     # Test Selector
     def test_selector(self):
-        self.assertEqual(Selector("source.python meta.function.python, source.python meta.class.python").does_match(Scope.factory("source.python meta.class.python")), True)
+        self.assertEqual(Selector("source.python meta.function.python, source.python meta.class.python").does_match(Scope("source.python meta.class.python")), True)
 
     def test_child_selector(self):
-        self.assertEqual(Selector("foo fud").does_match(Scope.factory("foo bar fud")), True)
-        self.assertEqual(Selector("foo > fud").does_match(Scope.factory("foo bar fud")), False)
-        self.assertEqual(Selector("foo > foo > fud").does_match(Scope.factory("foo foo fud")), True)
-        self.assertEqual(Selector("foo > foo > fud").does_match(Scope.factory("foo foo fud fud")), True)
-        self.assertEqual(Selector("foo > foo > fud").does_match(Scope.factory("foo foo fud baz")), True)
-        self.assertEqual(Selector("foo > foo fud > fud").does_match(Scope.factory("foo foo bar fud fud")), True)
+        self.assertEqual(Selector("foo fud").does_match(Scope("foo bar fud")), True)
+        self.assertEqual(Selector("foo > fud").does_match(Scope("foo bar fud")), False)
+        self.assertEqual(Selector("foo > foo > fud").does_match(Scope("foo foo fud")), True)
+        self.assertEqual(Selector("foo > foo > fud").does_match(Scope("foo foo fud fud")), True)
+        self.assertEqual(Selector("foo > foo > fud").does_match(Scope("foo foo fud baz")), True)
+        self.assertEqual(Selector("foo > foo fud > fud").does_match(Scope("foo foo bar fud fud")), True)
 
     def test_mixed(self):
-        self.assertEqual(Selector("^ foo > bar").does_match(Scope.factory("foo bar foo")), True)
-        self.assertEqual(Selector("foo > bar $").does_match(Scope.factory("foo bar foo")), False)
-        self.assertEqual(Selector("bar > foo $").does_match(Scope.factory("foo bar foo")), True)
-        self.assertEqual(Selector("foo > bar > foo $").does_match(Scope.factory("foo bar foo")), True)
-        self.assertEqual(Selector("^ foo > bar > foo $").does_match(Scope.factory("foo bar foo")), True)
-        self.assertEqual(Selector("bar > foo $").does_match(Scope.factory("foo bar foo")), True)
-        self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope.factory("foo bar baz foo bar baz")), True)
-        self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope.factory("foo foo bar baz foo bar baz")), False)
+        self.assertEqual(Selector("^ foo > bar").does_match(Scope("foo bar foo")), True)
+        self.assertEqual(Selector("foo > bar $").does_match(Scope("foo bar foo")), False)
+        self.assertEqual(Selector("bar > foo $").does_match(Scope("foo bar foo")), True)
+        self.assertEqual(Selector("foo > bar > foo $").does_match(Scope("foo bar foo")), True)
+        self.assertEqual(Selector("^ foo > bar > foo $").does_match(Scope("foo bar foo")), True)
+        self.assertEqual(Selector("bar > foo $").does_match(Scope("foo bar foo")), True)
+        self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope("foo bar baz foo bar baz")), True)
+        self.assertEqual(Selector("^ foo > bar > baz").does_match(Scope("foo foo bar baz foo bar baz")), False)
 
     def test_dollar(self):
-        dyn = Scope.factory("foo bar")
+        dyn = Scope("foo bar")
         dyn.push_scope("dyn.selection")
         self.assertEqual(Selector("foo bar$").does_match(dyn), True);
         self.assertEqual(Selector("foo bar dyn$").does_match(dyn), False);
         self.assertEqual(Selector("foo bar dyn").does_match(dyn), True);
 
     def test_anchor(self):
-        self.assertEqual(Selector("^ foo").does_match(Scope.factory("foo bar")), True)
-        self.assertEqual(Selector("^ bar").does_match(Scope.factory("foo bar")), False)
-        self.assertEqual(Selector("^ foo").does_match(Scope.factory("foo bar foo")), True)
-        self.assertEqual(Selector("foo $").does_match(Scope.factory("foo bar")), False)
-        self.assertEqual(Selector("bar $").does_match(Scope.factory("foo bar")), True)
+        self.assertEqual(Selector("^ foo").does_match(Scope("foo bar")), True)
+        self.assertEqual(Selector("^ bar").does_match(Scope("foo bar")), False)
+        self.assertEqual(Selector("^ foo").does_match(Scope("foo bar foo")), True)
+        self.assertEqual(Selector("foo $").does_match(Scope("foo bar")), False)
+        self.assertEqual(Selector("bar $").does_match(Scope("foo bar")), True)
 
     def test_scope_selector(self):
-        textScope = Scope.factory("text.html.markdown meta.paragraph.markdown markup.bold.markdown")
+        textScope = Scope("text.html.markdown meta.paragraph.markdown markup.bold.markdown")
         
         matchingSelectors = [
             Selector("text.* markup.bold"),
@@ -135,8 +135,8 @@ class ScopeSelectorTests(unittest.TestCase):
             lastRank = rank[0]
 
     def test_rank(self):
-        leftScope = Scope.factory("text.html.php meta.embedded.block.php source.php comment.block.php")
-        rightScope = Scope.factory("text.html.php meta.embedded.block.php source.php")
+        leftScope = Scope("text.html.php meta.embedded.block.php source.php comment.block.php")
+        rightScope = Scope("text.html.php meta.embedded.block.php source.php")
         context = Context(leftScope, rightScope)
         
         globalSelector = Selector("comment.block | L:comment.block")
@@ -202,13 +202,23 @@ class ScopeSelectorTests(unittest.TestCase):
         selector = Selector("source & ((L:punctuation.section.*.begin & R:punctuation.section.*.end) | (L:punctuation.definition.*.begin & R:punctuation.definition.*.end)) - string")
         rank = []
         self.assertTrue(selector.does_match(Context(
-            Scope.factory("source.python punctuation.definition.list.begin.python"),
-            Scope.factory("source.python punctuation.definition.list.end.python")), rank))
+            Scope("source.python punctuation.definition.list.begin.python"),
+            Scope("source.python punctuation.definition.list.end.python")), rank))
     
     def test_attributes(self):
         scope = Scope("foo bar")
         attributes(scope, "/home/diego/Workspace/Prymatex/prymatex/setup.py")
-        print(scope)
     
+    def test_xml_difference(self):
+        s1 = Scope("html head title")
+        s2 = Scope("html body h1")
+        s3 = Scope("html body p")
+        html = xml_difference(Scope(), s1) + "Title" + \
+            xml_difference(s1, s2) + "Header" + \
+            xml_difference(s2, s3) + "Paragraph" + \
+            xml_difference(s3, Scope())
+        self.assertEqual(html, 
+            "<html><head><title>Title</title></head><body><h1>Header</h1><p>Paragraph</p></body></html>")
+        
 if __name__ == '__main__':
     unittest.main()

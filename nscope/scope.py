@@ -34,10 +34,6 @@ class Scope(object):
             for atom in source.split():
                 self.push_scope(atom)
 
-    @classmethod
-    def factory(cls, source):
-        return cls(source)
-
     def __hash__(self):
         return hash("%s" % self)
 
@@ -110,10 +106,44 @@ class Scope(object):
 wildcard = Scope("x-any")
 
 def shared_prefix(lhs, rhs):
-    return ""
+    lhsSize, rhsSize = lhs.size(), rhs.size()
+    n1, n2 = lhs.node, rhs.node
+    for i in range(rhsSize, lhsSize):
+        n1 = n1.parent
+    for i in range(lhsSize, rhsSize):
+        n2 = n2.parent
 
-def xml_difference(frm, to, open = "<", close = ">"):
-    return ""
+    while n1 and n2 and n1 == n2:
+        n1 = n1.parent
+        n2 = n2.parent
+    
+    return Scope(n1)
+
+def xml_difference(frm, to, open_string = "<", close_string = ">"):
+    fromScopes, toScopes = [], []
+    tmp = Scope(frm)
+    while not tmp.empty():
+        fromScopes.append(tmp.back())
+        tmp.pop_scope()
+    tmp = Scope(to)
+    while not tmp.empty():
+        toScopes.append(tmp.back())
+        tmp.pop_scope()
+    
+    fromIter, toIter = len(fromScopes) - 1, len(toScopes) - 1
+    while fromIter != -1 and toIter != -1 and fromScopes[fromIter] == toScopes[toIter]:
+        fromIter -= 1
+        toIter -= 1
+    
+    res = ""
+    for it in range(fromIter + 1):
+        res += (open_string + "/" + fromScopes[it] + close_string)
+
+    while toIter != -1:
+        res += (open_string + toScopes[toIter] + close_string)
+        toIter -= 1
+
+    return res
 
 class Context(object):
     def __init__(self, left = None, right = None):
