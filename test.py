@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from nscope import Scope, Context, Selector
+from nscope import Scope, Context, Selector, attributes
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
@@ -58,22 +58,22 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertEqual(s1, s2)
         
     def test_hash(self):
+        sset = set()
         slist = []
         sdict = {}
         s1 = Scope("foo")
         s2 = Scope(s1)
+        sset.add(s1)
+        sset.add(s2)
         slist.append(s1)
         slist.append(s2)
         sdict[s1] = "foo"
-        sdict[s2] = "foo"
+        s2.push_scope("bar")
+        sdict[s2] = "bar"
         s1.push_scope("bar")
-        print(s1 in slist)
-        print(s1 in sdict)
-        print(s2 in sdict)
-        print(repr(s1))
-        print(s1, sdict, slist)
-        print(s2, sdict, slist)
-        print([ "%s" % k for k in sdict.keys() ])
+        sset.add(s2)
+        self.assertTrue(s2 in sset)
+        s1.push_scope("fud")
 
     # Test Selector
     def test_selector(self):
@@ -204,6 +204,11 @@ class ScopeSelectorTests(unittest.TestCase):
         self.assertTrue(selector.does_match(Context(
             Scope.factory("source.python punctuation.definition.list.begin.python"),
             Scope.factory("source.python punctuation.definition.list.end.python")), rank))
+    
+    def test_attributes(self):
+        scope = Scope("foo bar")
+        attributes(scope, "/home/diego/Workspace/Prymatex/prymatex/setup.py")
+        print(scope)
     
 if __name__ == '__main__':
     unittest.main()
