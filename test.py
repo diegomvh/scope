@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import unittest
-from nscope import Scope, Context, Selector, attributes, xml_difference
+from nscope import Scope, Context, Selector
 
 class ScopeSelectorTests(unittest.TestCase):
     def setUp(self):
@@ -207,16 +207,16 @@ class ScopeSelectorTests(unittest.TestCase):
     
     def test_attributes(self):
         scope = Scope("foo bar")
-        attributes(scope, "/home/diego/Workspace/Prymatex/prymatex/setup.py")
+        print(scope.auxiliary(["dyn.pepe"], __file__))
     
     def test_xml_difference(self):
         s1 = Scope("html head title")
         s2 = Scope("html body h1")
         s3 = Scope("html body p")
-        html = xml_difference(Scope(), s1) + "Title" + \
-            xml_difference(s1, s2) + "Header" + \
-            xml_difference(s2, s3) + "Paragraph" + \
-            xml_difference(s3, Scope())
+        html = Scope.xml_difference(Scope(), s1) + "Title" + \
+            Scope.xml_difference(s1, s2) + "Header" + \
+            Scope.xml_difference(s2, s3) + "Paragraph" + \
+            Scope.xml_difference(s3, Scope())
         self.assertEqual(html, 
             "<html><head><title>Title</title></head><body><h1>Header</h1><p>Paragraph</p></body></html>")
         
